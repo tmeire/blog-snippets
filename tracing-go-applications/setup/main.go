@@ -37,7 +37,7 @@ func initTracer() func() {
 
 	// Create a trace provider
 	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithSampler(sdktrace.AlwaysSample()),,
+		sdktrace.WithSampler(sdktrace.AlwaysSample()),
 		sdktrace.WithResource(res),
 		sdktrace.WithBatcher(exporter),
 	)
