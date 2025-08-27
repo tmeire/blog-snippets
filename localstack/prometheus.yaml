@@ -1,0 +1,3 @@
+storage:
+  exemplars:
+    max_exemplars: 100000

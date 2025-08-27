@@ -1,0 +1,41 @@
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.132.4
+    command: ['--config=/etc/otel-collector.yaml']
+    ports:
+      - "4317:4317"
+    volumes:
+      - ./otel-collector.yaml:/etc/otel-collector.yaml
+    depends_on:
+      - jaeger
+      - prometheus
+
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - ./prometheus.yaml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    command:
+      - '--web.enable-otlp-receiver'
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--enable-feature=exemplar-storage'
+
+  grafana:
+    image: grafana/grafana
+    volumes:
+      - ${PWD}/grafana/runtime-data:/var/lib/grafana
+      - ${PWD}/grafana-datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=foo
+      - GF_SECURITY_ADMIN_PASSWORD=bar
+    depends_on:
+      - prometheus
+
+  jaeger:
+    image: jaegertracing/all-in-one
+    ports:
+      - "16686:16686"

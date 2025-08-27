@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"time"
 
@@ -39,7 +41,10 @@ func initTracer() func() {
 	// Create an exporter that connects to the collector. If you don't provide an endpoint with
 	// otlptracegrpc.WithEndpoint, it will fall back to localhost:4317. You can then overwrite it using the
 	// OTEL_EXPORTER_OTLP_ENDPOINT environment variable.
-	exporter, err := otlptracegrpc.New(ctx)
+	exporter, err := otlptracegrpc.New(ctx,
+		otlptracegrpc.WithEndpoint("localhost:4317"),
+		otlptracegrpc.WithInsecure(),
+	)
 	if err != nil {
 		log.Fatalf("Failed to create exporter: %v", err)
 	}
@@ -72,8 +77,15 @@ func callDownstreamService(ctx context.Context) {
 	ctx, span := tracer.Start(ctx, "callDownstream")
 	defer span.End()
 
+	data := url.Values{}
+	data.Set("id", "1")
+	data.Set("password", "foobar")
+
+	br := bytes.NewBufferString(data.Encode())
+
 	// Create an HTTP request with the current context
-	req, _ := http.NewRequestWithContext(ctx, "GET", "http://localhost:8080/user?id=1", nil)
+	req, _ := http.NewRequestWithContext(ctx, "POST", "http://localhost:8080/user/auth", br)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	// The otelhttp client will automatically inject trace context into the request headers
 	client := http.Client{
